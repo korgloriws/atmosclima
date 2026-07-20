@@ -1,0 +1,11 @@
+services:
+  atmosclima:
+    build: .
+    container_name: atmosclima
+    ports:
+      - "3030:3030"
+    environment:
+      - NODE_ENV=production
+      - PORT=3030
+      - BASE_PATH=/
+    restart: unless-stopped

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Deploy Atmos Clima em /opt/atmosclima (VPS)
-# Uso (na VPS, como root):
-#   curl -fsSL https://raw.githubusercontent.com/korgloriws/atmosclima/main/deploy.sh | bash
-# ou, após clonar:
-#   bash /opt/atmosclima/deploy.sh
+# Deploy Atmos Clima em /opt/atmosclima (Docker)
+# Uso na VPS:
+#   cd /opt/atmosclima && bash deploy.sh
+#
+# Ou o fluxo padrão dos outros projetos:
+#   git pull && docker-compose build && docker-compose down && docker-compose up -d && docker builder prune -f
 
 set -euo pipefail
 
@@ -11,21 +12,21 @@ APP_DIR="/opt/atmosclima"
 REPO="https://github.com/korgloriws/atmosclima.git"
 PORT="3030"
 
-echo "==> Atmos Clima deploy → ${APP_DIR} :${PORT}"
+echo "==> Atmos Clima deploy (Docker) → ${APP_DIR} :${PORT}"
 
-if ! command -v node >/dev/null 2>&1; then
-  echo "Node.js não encontrado. Instale Node 20+ antes."
+if ! command -v docker >/dev/null 2>&1; then
+  echo "Docker não encontrado."
   exit 1
 fi
 
-if ! command -v npm >/dev/null 2>&1; then
-  echo "npm não encontrado."
+if ! docker compose version >/dev/null 2>&1 && ! command -v docker-compose >/dev/null 2>&1; then
+  echo "docker-compose não encontrado."
   exit 1
 fi
 
-if ! command -v pm2 >/dev/null 2>&1; then
-  echo "==> Instalando PM2 globalmente..."
-  npm install -g pm2
+COMPOSE="docker compose"
+if ! docker compose version >/dev/null 2>&1; then
+  COMPOSE="docker-compose"
 fi
 
 if [ -d "${APP_DIR}/.git" ]; then
@@ -40,22 +41,12 @@ else
   cd "${APP_DIR}"
 fi
 
-echo "==> Instalando dependências..."
-npm ci
-
-echo "==> Build de produção..."
-npm run build
-
-echo "==> Reiniciando com PM2..."
-if pm2 describe atmosclima >/dev/null 2>&1; then
-  pm2 reload ecosystem.config.cjs --update-env
-else
-  pm2 start ecosystem.config.cjs
-fi
-
-pm2 save
+echo "==> Build + restart..."
+${COMPOSE} build
+${COMPOSE} down
+${COMPOSE} up -d
+docker builder prune -f
 
 echo ""
-echo "✅ Atmos Clima no ar: http://$(hostname -I | awk '{print $1}'):${PORT}/"
-echo "   Local: http://127.0.0.1:${PORT}/"
-echo "   Admin: http://127.0.0.1:${PORT}/afiliados/admin"
+echo " Atmos Clima no ar: http://31.97.167.75:${PORT}/"
+echo "   Admin: http://31.97.167.75:${PORT}/afiliados/admin"
