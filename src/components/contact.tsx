@@ -4,7 +4,7 @@ import { SiGmail } from 'react-icons/si';
 
 const WHATSAPP_PRIMARY = '5531994122475';
 const WHATSAPP_SECONDARY = '5531988048226';
-const EMAIL = 'contato@atmosclima.com.br';
+const EMAIL = 'contatoatmosclima@gmail.com';
 
 const PHONE_PRIMARY = '(31) 99412-2475';
 const PHONE_SECONDARY = '(31) 98804-8226';
