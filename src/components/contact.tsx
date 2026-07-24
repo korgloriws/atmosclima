@@ -24,7 +24,7 @@ const emailUrl = `mailto:${EMAIL}?subject=${emailSubject}&body=${emailBody}`;
 
 export function Contact() {
   return (
-    <section id="contato" className="py-24 bg-white">
+    <section id="contato" className="scroll-mt-24 py-24 bg-white">
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>

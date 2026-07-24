@@ -30,7 +30,7 @@ export function Services() {
   ];
 
   return (
-    <section id="servicos" className="py-24 bg-background">
+    <section id="servicos" className="scroll-mt-24 py-24 bg-background">
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-3xl mx-auto mb-16 reveal">
           <h2 className="text-primary font-bold tracking-wider uppercase text-sm mb-3">Nossas Especialidades</h2>

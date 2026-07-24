@@ -25,7 +25,7 @@ export function Advantages() {
   ];
 
   return (
-    <section id="vantagens" className="py-24 bg-primary text-white">
+    <section id="vantagens" className="scroll-mt-24 py-24 bg-primary text-white">
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-3xl mx-auto mb-16 reveal">
           <h2 className="text-secondary font-bold tracking-wider uppercase text-sm mb-3">Por que nos escolher</h2>

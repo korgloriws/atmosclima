@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Menu, X, Phone } from 'lucide-react';
 import { Button } from './ui/button';
+import { navigateToSection } from '@/lib/scroll-to-section';
 
 type NavbarProps = {
   /** Força header claro (páginas internas sem hero escuro) */
@@ -43,11 +44,7 @@ export function Navbar({ forceLight = false }: NavbarProps) {
 
   const goToSection = (id: string) => {
     setMobileMenuOpen(false);
-    if (isHome) {
-      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-      return;
-    }
-    window.location.href = `/#${id}`;
+    navigateToSection(id, isHome);
   };
 
   const navClass = `text-sm font-medium transition-colors hover:text-secondary ${
@@ -93,13 +90,25 @@ export function Navbar({ forceLight = false }: NavbarProps) {
         )}
 
         <nav className="hidden md:flex items-center justify-center gap-8">
-          <button type="button" onClick={() => goToSection('servicos')} className={navClass}>
+          <button
+            type="button"
+            onClick={() => goToSection('servicos')}
+            className={navClass}
+          >
             Serviços
           </button>
-          <button type="button" onClick={() => goToSection('sobre')} className={navClass}>
+          <button
+            type="button"
+            onClick={() => goToSection('sobre')}
+            className={navClass}
+          >
             Sobre Nós
           </button>
-          <button type="button" onClick={() => goToSection('vantagens')} className={navClass}>
+          <button
+            type="button"
+            onClick={() => goToSection('vantagens')}
+            className={navClass}
+          >
             Vantagens
           </button>
           <Link
@@ -109,7 +118,11 @@ export function Navbar({ forceLight = false }: NavbarProps) {
           >
             Loja
           </Link>
-          <button type="button" onClick={() => goToSection('contato')} className={navClass}>
+          <button
+            type="button"
+            onClick={() => goToSection('contato')}
+            className={navClass}
+          >
             Contato
           </button>
         </nav>
@@ -132,20 +145,36 @@ export function Navbar({ forceLight = false }: NavbarProps) {
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
           >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {mobileMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
           </button>
         </div>
       </div>
 
       {mobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-white shadow-lg border-t py-4 px-4 md:px-6 flex flex-col gap-4">
-          <button type="button" onClick={() => goToSection('servicos')} className="text-left font-medium p-2 text-foreground hover:bg-accent rounded-md">
+          <button
+            type="button"
+            onClick={() => goToSection('servicos')}
+            className="text-left font-medium p-2 text-foreground hover:bg-accent rounded-md"
+          >
             Serviços
           </button>
-          <button type="button" onClick={() => goToSection('sobre')} className="text-left font-medium p-2 text-foreground hover:bg-accent rounded-md">
+          <button
+            type="button"
+            onClick={() => goToSection('sobre')}
+            className="text-left font-medium p-2 text-foreground hover:bg-accent rounded-md"
+          >
             Sobre Nós
           </button>
-          <button type="button" onClick={() => goToSection('vantagens')} className="text-left font-medium p-2 text-foreground hover:bg-accent rounded-md">
+          <button
+            type="button"
+            onClick={() => goToSection('vantagens')}
+            className="text-left font-medium p-2 text-foreground hover:bg-accent rounded-md"
+          >
             Vantagens
           </button>
           <Link
@@ -155,10 +184,17 @@ export function Navbar({ forceLight = false }: NavbarProps) {
           >
             Loja
           </Link>
-          <button type="button" onClick={() => goToSection('contato')} className="text-left font-medium p-2 text-foreground hover:bg-accent rounded-md">
+          <button
+            type="button"
+            onClick={() => goToSection('contato')}
+            className="text-left font-medium p-2 text-foreground hover:bg-accent rounded-md"
+          >
             Contato
           </button>
-          <Button className="w-full gap-2 mt-2" onClick={() => goToSection('contato')}>
+          <Button
+            className="w-full gap-2 mt-2"
+            onClick={() => goToSection('contato')}
+          >
             <Phone className="h-4 w-4" />
             Solicitar Orçamento
           </Button>

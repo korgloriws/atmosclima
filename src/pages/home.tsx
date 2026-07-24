@@ -8,16 +8,29 @@ import { Gallery } from '@/components/gallery';
 import { Contact } from '@/components/contact';
 import { Footer } from '@/components/footer';
 import { useScrollReveal } from '@/hooks/use-scroll-reveal';
+import {
+  consumePendingSectionId,
+  scrollToSectionWhenReady,
+} from '@/lib/scroll-to-section';
 
 export default function Home() {
   useScrollReveal();
 
   useEffect(() => {
-    // Basic smooth scroll for hash links if any
     document.documentElement.style.scrollBehavior = 'smooth';
     return () => {
       document.documentElement.style.scrollBehavior = 'auto';
     };
+  }, []);
+
+  // Vindo da loja (ou outro link /#contato): rola até a seção depois do React montar
+  useEffect(() => {
+    const id = consumePendingSectionId();
+    if (!id || id === 'hero') {
+      if (id === 'hero') window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    scrollToSectionWhenReady(id);
   }, []);
 
   return (
