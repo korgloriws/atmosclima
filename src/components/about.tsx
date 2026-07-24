@@ -44,7 +44,7 @@ export function About() {
               <div className="grid grid-cols-2 gap-6 mb-10 pb-10 border-b border-border">
                 <div className="text-center">
                   <div className="text-4xl md:text-5xl font-bold text-primary font-heading mb-1">
-                    10+
+                    20+
                   </div>
                   <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                     Anos de experiência

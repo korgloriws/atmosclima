@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'wouter';
-import { ExternalLink, ShoppingBag, Store, Tag } from 'lucide-react';
+import { ExternalLink, ShoppingBag, Store } from 'lucide-react';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
+import { AffiliateFeatured } from '@/components/affiliate-featured';
+import {
+  AffiliateFilters,
+  type StoreFilterState,
+} from '@/components/affiliate-filters';
 import {
   storeLabels,
   type AffiliateProduct,
+  type AffiliateStore,
 } from '@/data/affiliate-products';
 import { loadAffiliateProducts } from '@/lib/affiliate-storage';
 
@@ -105,9 +111,18 @@ function ProductCard({ product }: { product: AffiliateProduct }) {
   );
 }
 
+const DEFAULT_PRICE: [number, number] = [0, 0];
+
 export default function Afiliados() {
   const [products, setProducts] = useState<AffiliateProduct[]>([]);
-  const [category, setCategory] = useState<string>('all');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filters, setFilters] = useState<StoreFilterState>({
+    search: '',
+    brand: 'all',
+    model: 'all',
+    store: 'all',
+    priceRange: DEFAULT_PRICE,
+  });
 
   useEffect(() => {
     const refresh = () => setProducts(loadAffiliateProducts());
@@ -120,17 +135,85 @@ export default function Afiliados() {
     };
   }, []);
 
-  const categories = useMemo(
+  const priceBounds = useMemo(() => {
+    if (products.length === 0) return { min: 0, max: 0 };
+    const prices = products.map((p) => p.price);
+    const min = Math.floor(Math.min(...prices));
+    const max = Math.ceil(Math.max(...prices));
+    return { min, max: Math.max(max, min) };
+  }, [products]);
+
+  useEffect(() => {
+    setFilters((prev) => ({
+      ...prev,
+      priceRange: [priceBounds.min, priceBounds.max],
+    }));
+  }, [priceBounds.min, priceBounds.max]);
+
+  const brands = useMemo(
     () =>
-      Array.from(new Set(products.map((product) => product.category))).sort(),
+      Array.from(
+        new Set(
+          products
+            .map((p) => p.brand.trim())
+            .filter(Boolean),
+        ),
+      ).sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    [products],
+  );
+
+  const models = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          products
+            .map((p) => p.category.trim())
+            .filter(Boolean),
+        ),
+      ).sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    [products],
+  );
+
+  const stores = useMemo(
+    () =>
+      Array.from(new Set(products.map((p) => p.store))) as AffiliateStore[],
     [products],
   );
 
   const filtered = useMemo(() => {
+    const query = filters.search.trim().toLowerCase();
+
     return products.filter((product) => {
-      return category === 'all' || product.category === category;
+      if (filters.brand !== 'all' && product.brand !== filters.brand) {
+        return false;
+      }
+      if (filters.model !== 'all' && product.category !== filters.model) {
+        return false;
+      }
+      if (filters.store !== 'all' && product.store !== filters.store) {
+        return false;
+      }
+      if (
+        product.price < filters.priceRange[0] ||
+        product.price > filters.priceRange[1]
+      ) {
+        return false;
+      }
+      if (query) {
+        const haystack = [
+          product.title,
+          product.brand,
+          product.category,
+          product.description,
+          storeLabels[product.store],
+        ]
+          .join(' ')
+          .toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      return true;
     });
-  }, [products, category]);
+  }, [products, filters]);
 
   return (
     <div className="min-h-screen bg-muted/30 font-sans">
@@ -138,7 +221,6 @@ export default function Afiliados() {
 
       <main className="pt-24 pb-20">
         <section className="container mx-auto px-4 md:px-6">
-          {/* Banner da vitrine */}
           <div className="relative mb-10 overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-[#03063B] px-6 py-12 md:px-12 md:py-16">
             <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-secondary/20 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-secondary/10 blur-3xl" />
@@ -173,62 +255,45 @@ export default function Afiliados() {
             </div>
           </div>
 
-          {/* Filtros por categoria em chips */}
-          {categories.length > 0 && (
-            <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="mr-1 inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
-                  <Tag className="h-4 w-4 text-secondary" />
-                  Categorias:
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setCategory('all')}
-                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                    category === 'all'
-                      ? 'bg-primary text-white'
-                      : 'bg-white text-muted-foreground hover:bg-accent hover:text-foreground'
-                  }`}
-                >
-                  Todas
-                </button>
-                {categories.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setCategory(item)}
-                    className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                      category === item
-                        ? 'bg-primary text-white'
-                        : 'bg-white text-muted-foreground hover:bg-accent hover:text-foreground'
-                    }`}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {filtered.length}{' '}
-                {filtered.length === 1 ? 'produto' : 'produtos'}
-              </p>
-            </div>
+          {products.length > 0 && <AffiliateFeatured products={products} />}
+
+          {products.length > 0 && (
+            <AffiliateFilters
+              filters={filters}
+              onChange={setFilters}
+              brands={brands}
+              models={models}
+              stores={stores}
+              priceBounds={priceBounds}
+              open={filtersOpen}
+              onOpenChange={setFiltersOpen}
+              resultCount={filtered.length}
+            />
           )}
 
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-white py-20 text-center">
               <ShoppingBag className="mb-4 h-10 w-10 text-muted-foreground" />
               <p className="font-heading text-xl font-semibold text-foreground">
-                Nenhuma oferta cadastrada
+                {products.length === 0
+                  ? 'Nenhuma oferta cadastrada'
+                  : 'Nenhum produto encontrado'}
               </p>
-              <p className="mt-2 text-muted-foreground">
-                Cadastre produtos na{' '}
-                <Link
-                  href="/afiliados/admin"
-                  className="text-secondary hover:underline"
-                >
-                  área admin
-                </Link>
-                .
+              <p className="mt-2 max-w-md text-muted-foreground">
+                {products.length === 0 ? (
+                  <>
+                    Cadastre produtos na{' '}
+                    <Link
+                      href="/afiliados/admin"
+                      className="text-secondary hover:underline"
+                    >
+                      área admin
+                    </Link>
+                    .
+                  </>
+                ) : (
+                  'Tente ajustar a busca ou os filtros para ver mais resultados.'
+                )}
               </p>
             </div>
           ) : (

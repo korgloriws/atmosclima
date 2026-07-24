@@ -30,6 +30,6 @@ export const emptyProductForm = (): Omit<AffiliateProduct, 'id'> => ({
   image: '',
   store: 'mercadolivre',
   affiliateUrl: '',
-  category: 'Ar-condicionado',
+  category: 'Split',
   featured: false,
 });

@@ -414,7 +414,7 @@ export default function AfiliadosAdmin() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="category">Categoria</Label>
+                <Label htmlFor="category">Modelo</Label>
                 <Input
                   id="category"
                   value={form.category}

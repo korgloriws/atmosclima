@@ -25,7 +25,7 @@ export function Services() {
       title: "Projetos Comerciais",
       description: "Soluções em climatização para empresas, escritórios, lojas e galpões. Dimensionamento de carga térmica e PMOC.",
       icon: <Fan className="w-6 h-6 text-secondary" />,
-      features: ["Sistemas VRF", "Contrato de PMOC", "Laudos técnicos", "Renovação de ar"]
+      features: ["Contrato de PMOC", "Laudos técnicos", "Renovação de ar"]
     }
   ];
 
