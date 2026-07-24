@@ -8,4 +8,10 @@ services:
       - NODE_ENV=production
       - PORT=3030
       - BASE_PATH=/
+      - DATA_DIR=/app/data
+      - ADMIN_PASSWORD=atmos2026
+      - NODE_OPTIONS=--experimental-sqlite
+    volumes:
+      # Persistência do SQLite fora do container (sobrevive ao deploy)
+      - ./data:/app/data
     restart: unless-stopped

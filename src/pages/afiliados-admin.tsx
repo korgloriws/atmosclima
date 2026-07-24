@@ -25,12 +25,15 @@ import {
 } from '@/data/affiliate-products';
 import {
   ADMIN_PASSWORD,
-  createProductId,
+  createAffiliateProduct,
+  deleteAffiliateProduct,
+  fetchAffiliateProducts,
   isAdminAuthenticated,
-  loadAffiliateProducts,
-  saveAffiliateProducts,
+  migrateLocalStorageIfNeeded,
+  replaceAffiliateProducts,
   setAdminAuthenticated,
-} from '@/lib/affiliate-storage';
+  updateAffiliateProduct,
+} from '@/lib/affiliate-api';
 import { fetchProductFromAffiliateUrl } from '@/lib/fetch-affiliate-product';
 
 type FormState = Omit<AffiliateProduct, 'id'> & { id?: string };
@@ -47,26 +50,59 @@ export default function AfiliadosAdmin() {
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState('');
   const [products, setProducts] = useState<AffiliateProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyProductForm());
   const [fetching, setFetching] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
-  useEffect(() => {
-    setAuthed(isAdminAuthenticated());
-    setProducts(loadAffiliateProducts());
-  }, []);
-
-  const persist = (next: AffiliateProduct[]) => {
-    setProducts(next);
-    saveAffiliateProducts(next);
+  const refreshProducts = async (allowMigrate = false) => {
+    const data = await fetchAffiliateProducts();
+    if (allowMigrate) {
+      const migrated = await migrateLocalStorageIfNeeded(data);
+      if (migrated) {
+        setProducts(migrated);
+        toast({
+          title: 'Produtos migrados',
+          description: `${migrated.length} item(ns) do navegador foram salvos no servidor.`,
+        });
+        return migrated;
+      }
+    }
+    setProducts(data);
+    return data;
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    setAuthed(isAdminAuthenticated());
+    let cancelled = false;
+    const boot = async () => {
+      try {
+        await refreshProducts(isAdminAuthenticated());
+      } catch {
+        if (!cancelled) setProducts([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void boot();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
-      setAdminAuthenticated(true);
+      setAdminAuthenticated(true, password);
       setAuthed(true);
+      try {
+        await refreshProducts(true);
+      } catch {
+        /* lista vazia ok */
+      }
       toast({ title: 'Acesso liberado', description: 'Área de administração.' });
       return;
     }
@@ -134,7 +170,7 @@ export default function AfiliadosAdmin() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.affiliateUrl.trim() || !form.title.trim()) {
       toast({
@@ -145,44 +181,54 @@ export default function AfiliadosAdmin() {
       return;
     }
 
-    if (editingId) {
-      persist(
-        products.map((p) =>
-          p.id === editingId
-            ? {
-                ...form,
-                id: editingId,
-                price: Number(form.price) || 0,
-                originalPrice: form.originalPrice
-                  ? Number(form.originalPrice)
-                  : undefined,
-              }
-            : p,
-        ),
-      );
-      toast({ title: 'Produto atualizado' });
-    } else {
-      const next: AffiliateProduct = {
+    setSaving(true);
+    try {
+      const payload = {
         ...form,
-        id: createProductId(),
         price: Number(form.price) || 0,
         originalPrice: form.originalPrice
           ? Number(form.originalPrice)
           : undefined,
       };
-      persist([next, ...products]);
-      toast({ title: 'Produto adicionado' });
-    }
 
-    setShowForm(false);
-    setEditingId(null);
-    setForm(emptyProductForm());
+      if (editingId) {
+        await updateAffiliateProduct(editingId, payload);
+        toast({ title: 'Produto atualizado' });
+      } else {
+        await createAffiliateProduct(payload);
+        toast({ title: 'Produto adicionado' });
+      }
+
+      await refreshProducts();
+      setShowForm(false);
+      setEditingId(null);
+      setForm(emptyProductForm());
+    } catch (error) {
+      toast({
+        title: 'Falha ao salvar',
+        description:
+          error instanceof Error ? error.message : 'Erro ao gravar no servidor.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Remover este produto da vitrine?')) return;
-    persist(products.filter((p) => p.id !== id));
-    toast({ title: 'Produto removido' });
+    try {
+      await deleteAffiliateProduct(id);
+      await refreshProducts();
+      toast({ title: 'Produto removido' });
+    } catch (error) {
+      toast({
+        title: 'Falha ao excluir',
+        description:
+          error instanceof Error ? error.message : 'Erro ao remover produto.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleExport = () => {
@@ -203,15 +249,17 @@ export default function AfiliadosAdmin() {
       const text = await file.text();
       const parsed = JSON.parse(text) as AffiliateProduct[];
       if (!Array.isArray(parsed)) throw new Error('JSON inválido');
-      persist(parsed);
+      const next = await replaceAffiliateProducts(parsed);
+      setProducts(next);
       toast({
         title: 'Importado',
-        description: `${parsed.length} produto(s) carregados.`,
+        description: `${next.length} produto(s) carregados no servidor.`,
       });
-    } catch {
+    } catch (error) {
       toast({
         title: 'Falha na importação',
-        description: 'Arquivo JSON inválido.',
+        description:
+          error instanceof Error ? error.message : 'Arquivo JSON inválido.',
         variant: 'destructive',
       });
     }
@@ -270,7 +318,8 @@ export default function AfiliadosAdmin() {
             </h1>
             <p className="mt-2 max-w-2xl text-muted-foreground">
               Cole o link de afiliado do Mercado Livre e busque os dados
-              automaticamente (título, preço, imagem, marca).
+              automaticamente (título, preço, imagem, marca). Os produtos ficam
+              salvos no servidor (SQLite) e aparecem para todos os visitantes.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -477,7 +526,9 @@ export default function AfiliadosAdmin() {
             )}
 
             <div className="flex flex-wrap gap-3">
-              <Button type="submit">Salvar produto</Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? 'Salvando…' : 'Salvar produto'}
+              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -493,7 +544,11 @@ export default function AfiliadosAdmin() {
         )}
 
         <div className="space-y-4">
-          {sorted.length === 0 ? (
+          {loading ? (
+            <div className="rounded-2xl border border-border bg-white py-16 text-center text-muted-foreground">
+              Carregando produtos…
+            </div>
+          ) : sorted.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border py-16 text-center text-muted-foreground">
               Nenhum produto cadastrado. Clique em <strong>Novo produto</strong>{' '}
               para começar.

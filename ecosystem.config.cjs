@@ -19,6 +19,10 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: '3030',
         BASE_PATH: '/',
+        DATA_DIR: '/opt/atmosclima/data',
+        NODE_OPTIONS: '--experimental-sqlite',
+        // Troque em produção se quiser:
+        // ADMIN_PASSWORD: 'sua-senha-forte',
       },
       instances: 1,
       autorestart: true,

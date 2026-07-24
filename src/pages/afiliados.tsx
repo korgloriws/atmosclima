@@ -13,7 +13,7 @@ import {
   type AffiliateProduct,
   type AffiliateStore,
 } from '@/data/affiliate-products';
-import { loadAffiliateProducts } from '@/lib/affiliate-storage';
+import { fetchAffiliateProducts } from '@/lib/affiliate-api';
 
 function formatPrice(value: number) {
   return value.toLocaleString('pt-BR', {
@@ -115,6 +115,7 @@ const DEFAULT_PRICE: [number, number] = [0, 0];
 
 export default function Afiliados() {
   const [products, setProducts] = useState<AffiliateProduct[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<StoreFilterState>({
     search: '',
@@ -125,13 +126,20 @@ export default function Afiliados() {
   });
 
   useEffect(() => {
-    const refresh = () => setProducts(loadAffiliateProducts());
-    refresh();
-    window.addEventListener('atmos-affiliate-updated', refresh);
-    window.addEventListener('storage', refresh);
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const data = await fetchAffiliateProducts();
+        if (!cancelled) setProducts(data);
+      } catch {
+        if (!cancelled) setProducts([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
     return () => {
-      window.removeEventListener('atmos-affiliate-updated', refresh);
-      window.removeEventListener('storage', refresh);
+      cancelled = true;
     };
   }, []);
 
@@ -153,11 +161,7 @@ export default function Afiliados() {
   const brands = useMemo(
     () =>
       Array.from(
-        new Set(
-          products
-            .map((p) => p.brand.trim())
-            .filter(Boolean),
-        ),
+        new Set(products.map((p) => p.brand.trim()).filter(Boolean)),
       ).sort((a, b) => a.localeCompare(b, 'pt-BR')),
     [products],
   );
@@ -165,11 +169,7 @@ export default function Afiliados() {
   const models = useMemo(
     () =>
       Array.from(
-        new Set(
-          products
-            .map((p) => p.category.trim())
-            .filter(Boolean),
-        ),
+        new Set(products.map((p) => p.category.trim()).filter(Boolean)),
       ).sort((a, b) => a.localeCompare(b, 'pt-BR')),
     [products],
   );
@@ -255,53 +255,61 @@ export default function Afiliados() {
             </div>
           </div>
 
-          {products.length > 0 && <AffiliateFeatured products={products} />}
-
-          {products.length > 0 && (
-            <AffiliateFilters
-              filters={filters}
-              onChange={setFilters}
-              brands={brands}
-              models={models}
-              stores={stores}
-              priceBounds={priceBounds}
-              open={filtersOpen}
-              onOpenChange={setFiltersOpen}
-              resultCount={filtered.length}
-            />
-          )}
-
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-white py-20 text-center">
-              <ShoppingBag className="mb-4 h-10 w-10 text-muted-foreground" />
-              <p className="font-heading text-xl font-semibold text-foreground">
-                {products.length === 0
-                  ? 'Nenhuma oferta cadastrada'
-                  : 'Nenhum produto encontrado'}
-              </p>
-              <p className="mt-2 max-w-md text-muted-foreground">
-                {products.length === 0 ? (
-                  <>
-                    Cadastre produtos na{' '}
-                    <Link
-                      href="/afiliados/admin"
-                      className="text-secondary hover:underline"
-                    >
-                      área admin
-                    </Link>
-                    .
-                  </>
-                ) : (
-                  'Tente ajustar a busca ou os filtros para ver mais resultados.'
-                )}
-              </p>
+          {loading ? (
+            <div className="rounded-2xl border border-border bg-white py-16 text-center text-muted-foreground">
+              Carregando vitrine…
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filtered.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            <>
+              {products.length > 0 && <AffiliateFeatured products={products} />}
+
+              {products.length > 0 && (
+                <AffiliateFilters
+                  filters={filters}
+                  onChange={setFilters}
+                  brands={brands}
+                  models={models}
+                  stores={stores}
+                  priceBounds={priceBounds}
+                  open={filtersOpen}
+                  onOpenChange={setFiltersOpen}
+                  resultCount={filtered.length}
+                />
+              )}
+
+              {filtered.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-white py-20 text-center">
+                  <ShoppingBag className="mb-4 h-10 w-10 text-muted-foreground" />
+                  <p className="font-heading text-xl font-semibold text-foreground">
+                    {products.length === 0
+                      ? 'Nenhuma oferta cadastrada'
+                      : 'Nenhum produto encontrado'}
+                  </p>
+                  <p className="mt-2 max-w-md text-muted-foreground">
+                    {products.length === 0 ? (
+                      <>
+                        Cadastre produtos na{' '}
+                        <Link
+                          href="/afiliados/admin"
+                          className="text-secondary hover:underline"
+                        >
+                          área admin
+                        </Link>
+                        .
+                      </>
+                    ) : (
+                      'Tente ajustar a busca ou os filtros para ver mais resultados.'
+                    )}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {filtered.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
           <p className="mx-auto mt-14 max-w-2xl text-center text-sm text-muted-foreground">
