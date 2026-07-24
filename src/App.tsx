@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
 import NotFound from '@/pages/not-found';
 import Home from '@/pages/home';
 import Afiliados from '@/pages/afiliados';
@@ -28,6 +29,7 @@ function App() {
           <Router />
         </WouterRouter>
         <Toaster />
+        <PwaInstallPrompt />
       </TooltipProvider>
     </QueryClientProvider>
   );

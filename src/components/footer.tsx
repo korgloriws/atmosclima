@@ -55,7 +55,9 @@ export function Footer() {
 
               <span className="bg-white/5 py-2 px-3 rounded text-center">LG</span>
               <span className="bg-white/5 py-2 px-3 rounded text-center">Samsung</span>
-              <span className="bg-white/5 py-2 px-3 rounded text-center">Midea</span>
+              <span className="bg-white/5 py-2 px-3 rounded text-center">Daikin</span>
+              <span className="bg-white/5 py-2 px-3 rounded text-center">Elgin</span>
+              <span className="bg-white/5 py-2 px-3 rounded text-center">Fujitsu</span>
               <span className="bg-white/5 py-2 px-3 rounded text-center">TCL</span>
 
             </div>
