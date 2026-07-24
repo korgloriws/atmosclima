@@ -25,9 +25,11 @@ export default defineConfig({
     port,
     strictPort: true,
     host: '0.0.0.0',
+    allowedHosts: ['atmosclima.com', 'www.atmosclima.com'],
   },
   preview: {
     port,
     host: '0.0.0.0',
+    allowedHosts: ['atmosclima.com', 'www.atmosclima.com'],
   },
 });
